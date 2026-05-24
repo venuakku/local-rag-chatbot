@@ -3,21 +3,14 @@ from fastapi import HTTPException
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL_NAME = "llama3"
-TIMEOUT_SECONDS = 30
-
-SYSTEM_PROMPT = (
-    "You are a Python tutor for beginners. "
-    "Use simple words, short answers, and one small example when useful. "
-    "If user asks a coding question, explain step-by-step. "
-    "If user is confused, ask one clarifying question."
-)
+TIMEOUT_SECONDS = 120
 
 
 def ask_ollama(messages: list) -> str:
     payload = {
         "model": MODEL_NAME,
         "messages": messages,
-        "stream": False
+        "stream": False,
     }
 
     try:

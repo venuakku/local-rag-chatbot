@@ -1,53 +1,77 @@
-# Python Ollama Chatbot
+# Local RAG Chatbot
 
-FastAPI backend that chats with a **local** LLM via [Ollama](https://ollama.com/). The assistant is prompted as a **Python tutor for beginners**, with per-user conversation memory and a bounded context window.
+Upload documents (PDF/TXT), ask questions grounded in your files. Uses **FastAPI**, **Streamlit**, **Ollama**, **ChromaDB**, and **Hugging Face** embeddings (`all-MiniLM-L6-v2`).
 
 ## Prerequisites
 
 - Python 3.10+
-- [Ollama](https://ollama.com/download) installed and running
-- A model pulled locally, e.g. `ollama pull llama3`
+- [Ollama](https://ollama.com/download) with `llama3`: `ollama pull llama3`
 
 ## Setup
 
 ```bash
 cd chatbot
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Start Ollama (if not already running):
+## Run
+
+**Terminal 1 — Ollama**
 
 ```bash
 ollama serve
 ```
 
-## Run the API
+**Terminal 2 — API**
 
 ```bash
+cd chatbot
+source .venv/bin/activate
 uvicorn main:app --reload
 ```
 
-Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) for interactive OpenAPI docs, or call the chat endpoint manually:
+**Terminal 3 — Streamlit UI**
 
 ```bash
-curl -s -X POST "http://127.0.0.1:8000/chat" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"demo","message":"What is a Python list?"}'
+cd chatbot
+source .venv/bin/activate
+streamlit run streamlit_app.py
 ```
 
-Use the same `user_id` across requests to keep conversation context (trimmed to the last N messages; see `memory.py`).
+Open [http://127.0.0.1:8501](http://127.0.0.1:8501).
+
+1. Upload a `.pdf` or `.txt`
+2. Ask questions about the document
+3. **New session** clears vectors for that session (`data/chroma/<session_id>/`)
+
+## API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /ingest` | Form: `session_id`, `file` |
+| `POST /chat-rag` | JSON: `session_id`, `message` |
+| `POST /session/reset` | JSON: `session_id` |
+
+Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ## Project layout
 
-| Path | Role |
-|------|------|
-| `main.py` | FastAPI app and `/chat` route |
-| `schemas.py` | Request/response models |
-| `memory.py` | In-memory history + context trimming |
-| `services/ollama_service.py` | Ollama `/api/chat` client, system prompt, timeouts |
+```
+chatbot/
+  main.py              # FastAPI routes
+  streamlit_app.py     # UI
+  config.py            # Chroma paths
+  schemas.py
+  services/
+    document_service.py
+    chunk_service.py
+    embedding_service.py
+    vector_store_service.py
+    ingest_service.py
+    rag_service.py
+    ollama_service.py
+```
 
-## License
-
-Use and modify freely for learning.
+Vectors are stored under `data/chroma/<session_id>/` (gitignored).
